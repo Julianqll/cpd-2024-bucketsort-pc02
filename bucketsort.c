@@ -1,9 +1,10 @@
 #include "bucketsort.h"
-#include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define N_BUCKETS 94
+#define LENGTH 8
 
 typedef struct {
   long int *data;
@@ -12,14 +13,13 @@ typedef struct {
 } bucket;
 
 void sort(char *a, bucket *bucket) {
-  int j, i, length;
+  int j, i;
   long int key;
-  length = bucket->length;
   for (j = 1; j < bucket->total; j++) {
     key = bucket->data[j];
     i = j - 1;
-    while (i >= 0 &&
-           strcmp(a + bucket->data[i] * length, a + key * length) > 0) {
+    while (i >= 0 && strcmp(a + bucket->data[i] * bucket->length,
+                            a + key * bucket->length) > 0) {
       bucket->data[i + 1] = bucket->data[i];
       i--;
     }
@@ -28,28 +28,45 @@ void sort(char *a, bucket *bucket) {
 }
 
 long int *bucket_sort(char *a, int length, long int size) {
-
   long int i;
-  bucket buckets[N_BUCKETS], *b;
-  long int *returns;
+  bucket buckets[N_BUCKETS];
+  long int *returns = (long int *)malloc(sizeof(long int) * size);
+  long int *bucket_data[N_BUCKETS];
 
-  // allocate memory
-  returns = malloc(sizeof(long int) * size);
+  // Allocate memory for each bucket
   for (i = 0; i < N_BUCKETS; i++) {
-    buckets[i].data = returns + i * size / N_BUCKETS;
+    bucket_data[i] = (long int *)malloc(sizeof(long int) * size);
+    buckets[i].data = bucket_data[i];
     buckets[i].length = length;
     buckets[i].total = 0;
   }
 
-  // copy the keys to "buckets"
+  // Distribute elements into buckets
   for (i = 0; i < size; i++) {
-    b = &buckets[*(a + i * length) - 0x21];
-    b->data[b->total++] = i;
+    int bucket_index = *(a + i * length) - 0x21;
+    if (bucket_index < 0 || bucket_index >= N_BUCKETS) {
+      fprintf(stderr, "Invalid bucket index: %d\n", bucket_index);
+      exit(EXIT_FAILURE);
+    }
+    buckets[bucket_index].data[buckets[bucket_index].total++] = i;
   }
 
-  // sort each "bucket"
+  // Sort each bucket
   for (i = 0; i < N_BUCKETS; i++)
     sort(a, &buckets[i]);
+
+  // Collect sorted elements
+  long int index = 0;
+  for (i = 0; i < N_BUCKETS; i++) {
+    for (int j = 0; j < buckets[i].total; j++) {
+      returns[index++] = buckets[i].data[j];
+    }
+  }
+
+  // Free bucket memory
+  for (i = 0; i < N_BUCKETS; i++) {
+    free(bucket_data[i]);
+  }
 
   return returns;
 }

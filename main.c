@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 
   for (i = 0; i < N; i++) {
     fscanf(fin, "%s", strings + (i * LENGTH));
-    printf("%s", strings + (i * LENGTH));
   }
 
   fflush(stdout);
