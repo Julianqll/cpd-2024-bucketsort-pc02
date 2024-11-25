@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 
 #define N_BUCKETS 94
 #define LENGTH 8
@@ -41,19 +42,21 @@ long int *bucket_sort(char *a, int length, long int size) {
     buckets[i].total = 0;
   }
 
-  // Distribute elements into buckets
+  // Distribute elements into buckets in parallel
+  #pragma omp parallel for
   for (i = 0; i < size; i++) {
     int bucket_index = *(a + i * length) - 0x21;
-    if (bucket_index < 0 || bucket_index >= N_BUCKETS) {
-      fprintf(stderr, "Invalid bucket index: %d\n", bucket_index);
-      exit(EXIT_FAILURE);
+    #pragma omp critical
+    {
+      buckets[bucket_index].data[buckets[bucket_index].total++] = i;
     }
-    buckets[bucket_index].data[buckets[bucket_index].total++] = i;
   }
 
-  // Sort each bucket
-  for (i = 0; i < N_BUCKETS; i++)
+  // Sort each bucket in parallel
+  #pragma omp parallel for
+  for (i = 0; i < N_BUCKETS; i++) {
     sort(a, &buckets[i]);
+  }
 
   // Collect sorted elements
   long int index = 0;
